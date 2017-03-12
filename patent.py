@@ -216,7 +216,7 @@ def main():
                         else:
                             break
 
-                    #判斷 "或" ================================================================================ 
+                    #判斷 "或" ==========================================================ㄉ======================
                     if multi_belong_flag_1 is True:
                     
                         #print("item :"+str(item))
@@ -310,11 +310,21 @@ def main():
     print("SERVER: Processing model cost " + str(tStop - tStart) + " seconds."+"<br>")
 
 def judge_dependent(belong_number,line):
+   """This function is for judging dependent item, if so, this function will return true value """
+
    default_encoding = 'utf-8'
+
+   # 附屬項判斷資料
+   dependent_list = ["項", "如", "根據", "依據", "或"]
+
    if sys.getdefaultencoding() != default_encoding:
         sys.setdefaultencoding(default_encoding) 
-   if belong_number !=None and (((line.find("項") is not -1) and (line.find("如")is not -1)) or (line.find("根據")is not -1) or (line.find("依據")is not -1) or ((line.find("項") is not -1) and (line.find("或")is not -1))) : #當有偵測到數字；且發現文句中有出現項、第的時候
-        return True
+
+   for item in dependent_list:
+        if belong_number != None and line.find(item) is not -1:
+            return True
+            break
+
     
 def test_func(message):
     c = len(message)

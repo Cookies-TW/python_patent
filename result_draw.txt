@@ -1,0 +1,7 @@
+{source: "1", target: "1", type: "suit"},
+{source: "2", target: "1", type: "licensing"},
+{source: "3", target: "1", type: "licensing"},
+{source: "3", target: "2", type: "licensing"},
+{source: "4", target: "4", type: "suit"},
+{source: "5", target: "4", type: "licensing"},
+{source: "6", target: "4", type: "licensing"},
