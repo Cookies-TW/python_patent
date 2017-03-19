@@ -25,12 +25,28 @@ multi_belong_flag_2 = None
 temp_store  = []
 
 independent_item = 0
-belong_item = 0 
+belong_item = 0
+last_belong = 1
+termination = False
+
+
+def clear():
+    global multi_belong_flag_1
+    global multi_belong_flag_2
+    global temp_store
+
+    del temp_store[:]
+    temp_store = []
+    multi_belong_flag_1 = None
+    multi_belong_flag_2 = None
+    z = 0
+
 def main():
     global multi_belong_flag_1
     global multi_belong_flag_2
     global temp_store
     global independent_item
+    global termination
     global belong_item
     x=0
     file_name = " "
@@ -39,8 +55,7 @@ def main():
     ERROR = False
 
     
-    
-    #a
+
     #=============================================================================================================
     compare_list_1 = ['或']    
     compare_list_2 = ['至']
@@ -50,18 +65,7 @@ def main():
     tag = []
     output = []
     #=============================================================================================================
-    #===================Module=============================================
-    def clear():
-        global multi_belong_flag_1
-        global multi_belong_flag_2
-        global temp_store
-        
-        del temp_store[:]
-        temp_store  = []
-        multi_belong_flag_1 = None 
-        multi_belong_flag_2 = None 
-        z=0
-    #===================Module=============================================
+
     print("SERVER: WELCOME<br>")    
     f=open("input.txt","rb")
 
@@ -72,6 +76,10 @@ def main():
 
         
     while line:
+        if termination is True:
+            break
+        else:
+
             line = (line.decode("BIG5"))
             words = pseg.cut(line)
             for w in words:
@@ -81,7 +89,7 @@ def main():
                 
 
                 #================================================================================================= Type: Suit
-                if elements[2]=='m' or elements[2]=='nr':
+                if elements[2]=='m' or elements[2]=='nr': # 獨立項判斷
                     
                 #if line.find("一種") == 3 or line.find("一種") == 4:
                 
@@ -117,7 +125,8 @@ def main():
                     #以上處理項目 以下處理附屬項============================
 
                     
-                    while 1:
+                    while True:
+                        print("line: "+line)
                         belong_number = re.search('[0-9]',line) # 尋找附屬值,抓取數字(目前只能抓取一位)
                         """try:
                             
@@ -150,7 +159,7 @@ def main():
                         except AttributeError:
                             break
 
-
+                        print("belong: "+belong_number)
                         #------------------------------
 
                         
@@ -179,9 +188,13 @@ def main():
                         #-----------------------------
 
                         #print("belong_number 185: "+str(belong_number))
-                        
-                        if judge_dependent(belong_number,line) : #當有偵測到數字；且發現文句中有出現項、第的時候
+                        if judge_dependent(belong_number,line) is "OUT":
+                            termination = True
+                            break
+
+                        if judge_dependent(belong_number,line) is True: #當有偵測到數字；且發現文句中有出現項、第的時候
                             temp_store.append(int(belong_number))
+
 
                             try:
                                 """print(line)
@@ -216,7 +229,7 @@ def main():
                         else:
                             break
 
-                    #判斷 "或" ==========================================================ㄉ======================
+                    #判斷 "或" ================================================================================
                     if multi_belong_flag_1 is True:
                     
                         #print("item :"+str(item))
@@ -282,9 +295,8 @@ def main():
     #-------- document Error Check
     ERROR = check.Sequence(message)
     #--------
-    
 
-    if ERROR is None:
+    if ERROR is None and termination is False:
         #print("Dependent items: "+independent_item+"<br>")
         #print("Independent items: "+belong_item+"<br>")
         #print("Claim items: ",(independent_item+belong_item)+"<br>")
@@ -309,21 +321,41 @@ def main():
     print("SERVER: Analyze complete."+"<br>")
     print("SERVER: Processing model cost " + str(tStop - tStart) + " seconds."+"<br>")
 
+def error_detect(belong_number):
+    """判斷是否有邏輯錯誤, 如果依附次序錯誤，則拋出錯誤訊息(TRUE)。反之拋出正確（FALSE)。"""
+    # 考慮修改為plugin 方式
+    global last_belong
+
+    if int(belong_number) < int(last_belong):
+        print("last: "+last_belong+" "+belong_number)
+        return True
+    else:
+        last_belong = belong_number
+
 def judge_dependent(belong_number,line):
    """This function is for judging dependent item, if so, this function will return true value """
 
    default_encoding = 'utf-8'
 
-   # 附屬項判斷資料
+   # 附屬項判斷資料 (修改成txt 檔案方便之後 plugin 熱插拔)
    dependent_list = ["項", "如", "根據", "依據", "或"]
-
    if sys.getdefaultencoding() != default_encoding:
         sys.setdefaultencoding(default_encoding) 
 
-   for item in dependent_list:
+   """for item in dependent_list:
         if belong_number != None and line.find(item) is not -1:
             return True
-            break
+            break"""
+
+   for item in dependent_list:
+       if belong_number != None and line.find(item) is not -1:
+           if error_detect(belong_number):
+               print("WRONG DETECTED: ATTACH LOGIC MISTAKE.")
+               return "OUT"""
+               break
+           else:
+               return True
+               break
 
     
 def test_func(message):
@@ -346,12 +378,15 @@ def for_php():
     ftpr.writelines("請求項： "+str(independent_item+belong_item)+" \n")
     ftpr.close()
     #except:
-        #ftpr.writelines("ERROR\n") 
+        #ftpr.writelines("ERROR\n")
+def system_record():
+    fptr = open("system_record.txt","a")
+    fptr.writelines("產生時間: " + str(time.strftime("%b %d %Y %H:%M:%S")) + "\n")
 
 if __name__ == "__main__":
     main()
-    export.process()
-    for_php()
+    export.process() #in online, it needs to be on.
+    #for_php()  #if online, it needs to be on.
     print("SERVER: Export suuccessful")
      
 #---------------------------------------------------------------->
