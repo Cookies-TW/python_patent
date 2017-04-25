@@ -29,18 +29,21 @@ belong_item = 0
 last_belong = 1
 termination = False
 
+"""-----------------------------------------------"""
+function_detect = 0 #附屬順序除錯功能 0:關閉 1：開啟
+"""-----------------------------------------------"""
 
 def clear():
-    global multi_belong_flag_1
-    global multi_belong_flag_2
-    global temp_store
-
-    del temp_store[:]
-    temp_store = []
-    multi_belong_flag_1 = None
-    multi_belong_flag_2 = None
-    z = 0
-
+        global multi_belong_flag_1
+        global multi_belong_flag_2
+        global temp_store
+        
+        del temp_store[:]
+        temp_store  = []
+        multi_belong_flag_1 = None 
+        multi_belong_flag_2 = None 
+        z=0
+        
 def main():
     global multi_belong_flag_1
     global multi_belong_flag_2
@@ -48,6 +51,8 @@ def main():
     global independent_item
     global termination
     global belong_item
+    global function_detect
+    
     x=0
     file_name = " "
     file =" "
@@ -55,7 +60,8 @@ def main():
     ERROR = False
 
     
-
+    
+    
     #=============================================================================================================
     compare_list_1 = ['或']    
     compare_list_2 = ['至']
@@ -64,10 +70,9 @@ def main():
     elements = [] 
     tag = []
     output = []
-    #=============================================================================================================
-
+    
     print("SERVER: WELCOME<br>")    
-    f=open("input.txt","rb")
+    f=open("input.txt","r")
 
 
     tStart = time.time()
@@ -79,8 +84,7 @@ def main():
         if termination is True:
             break
         else:
-
-            line = (line.decode("BIG5"))
+            #line = (line.decode("BIG5"))
             words = pseg.cut(line)
             for w in words:
                 elements.append(w.flag)
@@ -89,7 +93,7 @@ def main():
                 
 
                 #================================================================================================= Type: Suit
-                if elements[2]=='m' or elements[2]=='nr': # 獨立項判斷
+                if elements[2]=='m' or elements[2]=='nr':
                     
                 #if line.find("一種") == 3 or line.find("一種") == 4:
                 
@@ -125,8 +129,7 @@ def main():
                     #以上處理項目 以下處理附屬項============================
 
                     
-                    while True:
-                        print("line: "+line)
+                    while 1:
                         belong_number = re.search('[0-9]',line) # 尋找附屬值,抓取數字(目前只能抓取一位)
                         """try:
                             
@@ -159,20 +162,12 @@ def main():
                         except AttributeError:
                             break
 
-                        print("belong: "+belong_number)
+
                         #------------------------------
 
                         
                         try:
-                            """print("第1個: "+elements[0])
-                            print("第2個: "+elements[1])
-                            print(line)
-                            print()
-                            print(belong_number)
-                            print(line.find(belong_number))
-                            print("x: "+elements[(int(line.find(belong_number)-1))])
-                            print(elements[(int(line.find(belong_number)))])
-                            print("x: "+elements[(int(line.find(belong_number)+1))])"""
+                            
 
                             
                             if elements[(str(line.find(belong_number)-1))] is 'x' and elements[(str(line.find(belong_number)+1))] is 'x' :
@@ -188,22 +183,13 @@ def main():
                         #-----------------------------
 
                         #print("belong_number 185: "+str(belong_number))
-                        if judge_dependent(belong_number,line) is "OUT":
+                        if judge_dependent(belong_number,line,function_detect) is "OUT":
                             termination = True
                             break
-
-                        if judge_dependent(belong_number,line) is True: #當有偵測到數字；且發現文句中有出現項、第的時候
+                        if judge_dependent(belong_number,line,function_detect) is True: #當有偵測到數字；且發現文句中有出現項、第的時候
                             temp_store.append(int(belong_number))
 
-
-                            try:
-                                """print(line)
-                                print(s)
-                                print("line[s+2]: "+ line[s+2])
-                                
-                                print("line[s+3]: "+ line[s+3])
-                                print("line[s+4]: "+ line[s+4])"""
-                                
+                            try:                
                                 if (line[s+2] in compare_list_1 )or (line[s+3]in compare_list_1) or (line[s+4] in compare_list_1):  	#根據s(附屬項之相對位置)往後推移尋找關鍵字,判斷是否多重附屬(或、至) ●●●● ※修改標記 ●●●●
                                    multi_belong_flag_1 = True
                                 if (line[s+2] in compare_list_2 )or (line[s+3]in compare_list_2) or (line[s+4] in compare_list_2):
@@ -229,7 +215,7 @@ def main():
                         else:
                             break
 
-                    #判斷 "或" ================================================================================
+                    #判斷 "或" ================================================================================ 
                     if multi_belong_flag_1 is True:
                     
                         #print("item :"+str(item))
@@ -257,7 +243,7 @@ def main():
                     #判斷 "至" ================================================================================
                     if multi_belong_flag_2 is True: #至  此處record 如使用識別所有數字的話 可能發生狀況 需要修正
                         temp_record = []
-                        record = re.findall("[0-9]",line)
+                        record = re.findall("\s[0-9]\s|\s[0-9][0-9]\s",line)
                         
                         z = len(record)
                         for i in range(0,z,1):
@@ -295,6 +281,7 @@ def main():
     #-------- document Error Check
     ERROR = check.Sequence(message)
     #--------
+    
 
     if ERROR is None and termination is False:
         #print("Dependent items: "+independent_item+"<br>")
@@ -321,18 +308,7 @@ def main():
     print("SERVER: Analyze complete."+"<br>")
     print("SERVER: Processing model cost " + str(tStop - tStart) + " seconds."+"<br>")
 
-def error_detect(belong_number):
-    """判斷是否有邏輯錯誤, 如果依附次序錯誤，則拋出錯誤訊息(TRUE)。反之拋出正確（FALSE)。"""
-    # 考慮修改為plugin 方式
-    global last_belong
-
-    if int(belong_number) < int(last_belong):
-        print("last: "+last_belong+" "+belong_number)
-        return True
-    else:
-        last_belong = belong_number
-
-def judge_dependent(belong_number,line):
+def judge_dependent(belong_number,line,function_detect):
    """This function is for judging dependent item, if so, this function will return true value """
 
    default_encoding = 'utf-8'
@@ -341,22 +317,22 @@ def judge_dependent(belong_number,line):
    dependent_list = ["項", "如", "根據", "依據", "或"]
    if sys.getdefaultencoding() != default_encoding:
         sys.setdefaultencoding(default_encoding) 
+   if int(function_detect) is int(0):
+        for item in dependent_list: #測試使用，移除附屬順序判斷功能
+            if belong_number != None and line.find(item) is not -1:
+                return True
+                break
 
-   """for item in dependent_list:
-        if belong_number != None and line.find(item) is not -1:
-            return True
-            break"""
-
-   for item in dependent_list:
-       if belong_number != None and line.find(item) is not -1:
-           if error_detect(belong_number):
-               print("WRONG DETECTED: ATTACH LOGIC MISTAKE.")
-               return "OUT"""
-               break
-           else:
-               return True
-               break
-
+   else:
+       for item in dependent_list:
+            if belong_number != None and line.find(item) is not -1:
+                if error_detect(belong_number):
+                    print("WRONG DETECTED: ATTACH LOGIC MISTAKE.")
+                    return "OUT"
+                    break
+                else:
+                    return True
+                    break
     
 def test_func(message):
     c = len(message)
@@ -378,15 +354,12 @@ def for_php():
     ftpr.writelines("請求項： "+str(independent_item+belong_item)+" \n")
     ftpr.close()
     #except:
-        #ftpr.writelines("ERROR\n")
-def system_record():
-    fptr = open("system_record.txt","a")
-    fptr.writelines("產生時間: " + str(time.strftime("%b %d %Y %H:%M:%S")) + "\n")
+        #ftpr.writelines("ERROR\n") 
 
 if __name__ == "__main__":
     main()
-    export.process() #in online, it needs to be on.
-    #for_php()  #if online, it needs to be on.
+    export.process()
+    for_php()
     print("SERVER: Export suuccessful")
      
 #---------------------------------------------------------------->
